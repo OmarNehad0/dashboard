@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Heaven Services — لوحة التحكم</title>
+
+  <!-- Minimal, modern styles (dark themed) -->
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#94a3b8;
+      --accent:#7c3aed; --accent-2:#06b6d4; --success:#16a34a; --danger:#ef4444;
+      --glass: rgba(255,255,255,0.03);
+      font-family: Inter, "Noto Kufi Arabic", "Segoe UI", Roboto, system-ui, -apple-system;
+    }
+    html,body{height:100%;margin:0;background:
+      linear-gradient(180deg, rgba(15,23,36,1) 0%, rgba(2,6,23,0.8) 100%);
+      color:#e6eef8; -webkit-font-smoothing:antialiased;}
+    .app { max-width:1200px; margin:28px auto; padding:20px; }
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between}
+    h1{margin:0;font-size:20px;letter-spacing:0.2px}
+    .sub{color:var(--muted);font-size:13px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03));border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    .controls{display:flex;gap:12px;align-items:center}
+    .btn{background:var(--accent);border:none;padding:8px 12px;border-radius:8px;color:white;cursor:pointer;font-weight:600}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+    .btn.warn{background:var(--danger)}
+    input,select{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px;border-radius:8px;color:inherit}
+    .search{min-width:260px}
+    .table-wrap{margin-top:16px;overflow:auto}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:10px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.03)}
+    th{position:sticky;top:0;background:transparent;color:var(--muted);font-weight:700}
+    tr:hover td{background:rgba(255,255,255,0.01)}
+    .small{font-size:12px;color:var(--muted)}
+    .editable{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);min-width:120px}
+    .flex{display:flex;gap:8px;align-items:center}
+    .img-thumb{width:48px;height:48px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,255,255,0.04)}
+    .toast{position:fixed;right:20px;bottom:20px;z-index:9999}
+    .toast .item{background:var(--card);padding:10px 14px;border-radius:10px;margin-top:8px;box-shadow:0 6px 18px rgba(2,6,23,0.5);border-left:4px solid var(--success)}
+    /* small screens */
+    @media (max-width:880px){ .controls{flex-wrap:wrap} table{font-size:13px} .img-thumb{width:40px;height:40px} }
+    /* login modal */
+    .modal-back{position:fixed;inset:0;background:linear-gradient(rgba(1,1,1,0.6),rgba(1,1,1,0.6));display:flex;align-items:center;justify-content:center;z-index:999}
+    .login-card{width:420px;max-width:95%}
+    label{display:block;margin-bottom:6px;color:var(--muted);font-size:13px}
+    .muted{color:var(--muted)}
+    .kbd{padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);font-size:13px}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted);padding:6px 8px;border-radius:8px}
+    .tag{background:rgba(255,255,255,0.03);padding:4px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
+    .success{border-left:4px solid var(--success)}
+    .danger{border-left:4px solid var(--danger)}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Heaven Services — لوحة التحكم</h1>
+        <div class="sub">عدل الأسعار — التغييرات ستُرسَل إلى الخادم فوريًا</div>
+      </div>
+
+      <div class="controls">
+        <div class="tag" id="loginState">غير مسجل</div>
+        <input id="search" class="search" placeholder="ابحث باسم المنتج أو الفئة..." />
+        <select id="filterCategory"><option value="">كل الفئات</option></select>
+        <button class="btn" id="btnAdd">إضافة منتج</button>
+        <button class="btn secondary" id="btnLogout" style="display:none">تسجيل خروج</button>
+      </div>
+    </header>
+
+    <main style="margin-top:18px">
+      <div class="card">
+        <div class="flex" style="justify-content:space-between;align-items:center">
+          <div>
+            <div class="small muted">إجمالي العناصر: <span id="totalCount">0</span></div>
+          </div>
+          <div class="small muted">API: <span id="apiUrl">/api</span></div>
+        </div>
+
+        <div class="table-wrap card" style="margin-top:12px">
+          <table id="itemsTable" aria-live="polite">
+            <thead>
+              <tr>
+                <th>صورة</th>
+                <th>الاسم</th>
+                <th>الفئة</th>
+                <th>السعر</th>
+                <th class="small">الإجراء</th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody">
+              <!-- rows populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Add / Edit Panel (hidden, toggled by JS) -->
+    <div id="editorPanel" class="card" style="margin-top:14px;display:none">
+      <h3 id="editorTitle">إضافة منتج جديد</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label>الاسم</label>
+          <input id="e_name" placeholder="اسم المنتج" />
+        </div>
+        <div>
+          <label>الفئة</label>
+          <input id="e_cat" placeholder="الفئة" />
+        </div>
+        <div>
+          <label>السعر</label>
+          <input id="e_price" type="number" placeholder="السعر" />
+        </div>
+        <div>
+          <label>رابط الصورة (URL)</label>
+          <input id="e_image" placeholder="https://..." />
+        </div>
+      </div>
+
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+        <img id="previewImage" class="img-thumb" src="https://via.placeholder.com/80" alt="preview" />
+        <div style="margin-left:auto">
+          <button class="btn" id="saveItemBtn">حفظ</button>
+          <button class="btn secondary" id="cancelEditBtn">إلغاء</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- login modal -->
+  <div id="loginModal" class="modal-back" style="display:none">
+    <div class="card login-card">
+      <h2 style="margin:0 0 6px 0">تسجيل دخول المدير</h2>
+      <p class="muted" style="margin:0 0 12px 0">أدخل اسم المستخدم وكلمة المرور. سيتم حفظ التوكن في المتصفح فقط.</p>
+      <label>اسم المستخدم</label>
+      <input id="loginUser" placeholder="admin" />
+      <label>كلمة المرور</label>
+      <input id="loginPass" type="password" placeholder="••••••" />
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <button class="btn" id="loginBtn">تسجيل دخول</button>
+        <button class="btn secondary" id="loginCancel">إلغاء</button>
+      </div>
+      <p class="muted" style="margin-top:10px;font-size:13px">ملاحظة: يمكنك تكوين اسم المستخدم في الملف الخلفي (.env) لاحقًا.</p>
+    </div>
+  </div>
+
+  <!-- toasts -->
+  <div class="toast" id="toastRoot"></div>
+
+  <script>
+  /****************************************************************
+   * CONFIG
+   * - Set API_BASE to your Railway backend URL (no trailing slash)
+   * - If you want to test locally, use: http://localhost:3000
+   ****************************************************************/
+  const API_BASE = ""; // <-- set your Railway API URL here e.g. "https://your-railway-app.up.railway.app"
+  document.getElementById('apiUrl').textContent = API_BASE || "/api (set API_BASE)";
+
+  /****************************************************************
+   * STATE
+   ****************************************************************/
+  let state = {
+    token: localStorage.getItem("admin_token") || null,
+    items: [],
+    filtered: [],
+    editingId: null,
+    categories: new Set()
+  };
+
+  /****************************************************************
+   * HELPERS
+   ****************************************************************/
+  function toast(msg, type = "success") {
+    const root = document.getElementById("toastRoot");
+    const el = document.createElement("div");
+    el.className = "item " + (type === "error" ? "danger" : "success");
+    el.textContent = msg;
+    root.appendChild(el);
+    setTimeout(()=> el.remove(), 3500);
+  }
+
+  function setAuthUI() {
+    const logged = !!state.token;
+    document.getElementById('loginState').textContent = logged ? "مُسجل" : "غير مُسجل";
+    document.getElementById('btnLogout').style.display = logged ? "inline-block" : "none";
+    document.getElementById('btnAdd').disabled = !logged;
+  }
+
+  function formatPrice(p) {
+    if (isNaN(p)) return p;
+    p = Number(p);
+    if (p >= 1_000_000) return (p/1_000_000).toFixed(2) + "M";
+    if (p >= 1_000) return (p/1_000).toFixed(2) + "K";
+    return p + " ج.م";
+  }
+
+  /****************************************************************
+   * API CALLS (expects token when required)
+   ****************************************************************/
+  async function api(path, opts = {}) {
+    const headers = opts.headers || {};
+    headers['Content-Type'] = 'application/json';
+    if (state.token) headers['Authorization'] = "Bearer " + state.token;
+    const res = await fetch((API_BASE || "") + path, { ...opts, headers });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || res.statusText || 'API error');
+    }
+    return await res.json();
+  }
+
+  async function loadItems() {
+    try {
+      const items = await api('/api/items');
+      state.items = items;
+      state.filtered = items;
+      state.categories = new Set(items.map(i => i.category || "غير مصنف"));
+      renderCategories();
+      renderTable();
+      document.getElementById('totalCount').textContent = items.length;
+    } catch (err) {
+      console.error(err);
+      toast("فشل تحميل العناصر — تحقق من API_BASE و صلاحيات CORS.", "error");
+    }
+  }
+
+  async function saveNewItem(item) {
+    try {
+      const saved = await api('/api/items', { method:'POST', body: JSON.stringify(item) });
+      state.items.unshift(saved.item || saved); // support API response shape
+      toast("تم إضافة العنصر");
+      hideEditor();
+      renderTable();
+    } catch (err) {
+      console.error(err);
+      toast("فشل إضافة العنصر", "error");
+    }
+  }
+
+  async function updateItem(id, payload) {
+    // optimistic UI
+    const idx = state.items.findIndex(i => i._id === id);
+    const old = { ...state.items[idx] };
+    state.items[idx] = { ...state.items[idx], ...payload };
+    renderTable();
+    try {
+      const res = await api(`/api/items/${id}`, { method:'PUT', body: JSON.stringify(payload) });
+      // merge from server if returned
+      state.items[idx] = res.item || res;
+      toast("تم الحفظ");
+    } catch (err) {
+      // rollback
+      state.items[idx] = old;
+      renderTable();
+      console.error(err);
+      toast("فشل الحفظ", "error");
+    }
+  }
+
+  async function deleteItem(id) {
+    if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+    try {
+      await api(`/api/items/${id}`, { method:'DELETE' });
+      state.items = state.items.filter(i => i._id !== id);
+      renderTable();
+      toast("تم الحذف");
+    } catch (err) {
+      console.error(err);
+      toast("فشل الحذف", "error");
+    }
+  }
+
+  /****************************************************************
+   * RENDERING
+   ****************************************************************/
+  function renderCategories(){
+    const sel = document.getElementById("filterCategory");
+    sel.innerHTML = '<option value="">كل الفئات</option>';
+    Array.from(state.categories).sort().forEach(cat=>{
+      const o = document.createElement('option');
+      o.value = cat; o.textContent = cat;
+      sel.appendChild(o);
+    });
+  }
+
+  function renderTable(){
+    const body = document.getElementById("itemsBody");
+    body.innerHTML = "";
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    const catFilter = document.getElementById('filterCategory').value;
+    const list = state.items.filter(it=>{
+      if (catFilter && it.category !== catFilter) return false;
+      if (!q) return true;
+      return (it.name||"").toLowerCase().includes(q) || (it.category||"").toLowerCase().includes(q);
+    });
+
+    state.filtered = list;
+    document.getElementById('totalCount').textContent = list.length;
+
+    list.forEach(item=>{
+      const tr = document.createElement('tr');
+
+      // image
+      const tdImg = document.createElement('td');
+      const img = document.createElement('img');
+      img.className = 'img-thumb';
+      img.src = item.image || 'https://via.placeholder.com/80';
+      img.alt = item.name;
+      tdImg.appendChild(img);
+      tr.appendChild(tdImg);
+
+      // name editable
+      const tdName = document.createElement('td');
+      const nameInput = document.createElement('input');
+      nameInput.className = 'editable';
+      nameInput.value = item.name || "";
+      nameInput.addEventListener('change', (e)=> updateItem(item._id, { name: e.target.value }));
+      tdName.appendChild(nameInput);
+      tr.appendChild(tdName);
+
+      // category
+      const tdCat = document.createElement('td');
+      const catInput = document.createElement('input');
+      catInput.className = 'editable';
+      catInput.value = item.category || "";
+      catInput.addEventListener('change', (e)=> {
+        updateItem(item._id, { category: e.target.value });
+        // keep category set updated
+        state.categories.add(e.target.value);
+        renderCategories();
+      });
+      tdCat.appendChild(catInput);
+      tr.appendChild(tdCat);
+
+      // price
+      const tdPrice = document.createElement('td');
+      const priceInput = document.createElement('input');
+      priceInput.className = 'editable';
+      priceInput.type = 'number';
+      priceInput.value = item.price ?? 0;
+      priceInput.addEventListener('change', (e)=> {
+        const val = Number(e.target.value);
+        if (isNaN(val)) { toast("السعر يجب أن يكون رقم", "error"); return; }
+        updateItem(item._id, { price: val });
+      });
+      tdPrice.appendChild(priceInput);
+      tdPrice.appendChild(document.createElement('div'));
+      tr.appendChild(tdPrice);
+
+      // actions
+      const tdAct = document.createElement('td');
+      tdAct.className = 'small';
+      const del = document.createElement('button');
+      del.className = 'ghost';
+      del.style.marginRight = '6px';
+      del.textContent = 'حذف';
+      del.onclick = ()=> deleteItem(item._id);
+
+      const openEdit = document.createElement('button');
+      openEdit.className = 'ghost';
+      openEdit.textContent = 'تعديل';
+      openEdit.onclick = ()=> openEditor(item);
+
+      tdAct.appendChild(openEdit);
+      tdAct.appendChild(del);
+
+      tr.appendChild(tdAct);
+      body.appendChild(tr);
+    });
+  }
+
+  /****************************************************************
+   * EDITOR (add / edit)
+   ****************************************************************/
+  function openEditor(item = null) {
+    document.getElementById('editorPanel').style.display = 'block';
+    document.getElementById('editorTitle').textContent = item ? "تعديل المنتج" : "إضافة منتج جديد";
+    document.getElementById('e_name').value = item?.name || "";
+    document.getElementById('e_cat').value = item?.category || "";
+    document.getElementById('e_price').value = item?.price ?? "";
+    document.getElementById('e_image').value = item?.image || "";
+    document.getElementById('previewImage').src = item?.image || "https://via.placeholder.com/80";
+    state.editingId = item?._id || null;
+  }
+
+  function hideEditor() {
+    document.getElementById('editorPanel').style.display = 'none';
+    state.editingId = null;
+    document.getElementById('e_name').value = "";
+    document.getElementById('e_cat').value = "";
+    document.getElementById('e_price').value = "";
+    document.getElementById('e_image').value = "";
+    document.getElementById('previewImage').src = "https://via.placeholder.com/80";
+  }
+
+  document.getElementById('e_image').addEventListener('input', (e)=>{
+    const url = e.target.value.trim();
+    document.getElementById('previewImage').src = url || 'https://via.placeholder.com/80';
+  });
+
+  document.getElementById('btnAdd').addEventListener('click', ()=> openEditor());
+  document.getElementById('cancelEditBtn').addEventListener('click', hideEditor);
+
+  document.getElementById('saveItemBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('e_name').value.trim();
+    const cat = document.getElementById('e_cat').value.trim();
+    const price = Number(document.getElementById('e_price').value);
+    const image = document.getElementById('e_image').value.trim() || null;
+    if (!name || !cat || isNaN(price)) { toast("املأ الحقول الأساسية (الاسم، الفئة، السعر).", "error"); return; }
+
+    if (state.editingId) {
+      await updateItem(state.editingId, { name, category: cat, price, image });
+    } else {
+      await saveNewItem({ name, category: cat, price, image });
+    }
+  });
+
+  /****************************************************************
+   * AUTH (simple)
+   ****************************************************************/
+  document.getElementById('loginState').addEventListener('click', ()=> {
+    if (!state.token) showLogin();
+  });
+  document.getElementById('btnLogout').addEventListener('click', ()=> {
+    localStorage.removeItem('admin_token');
+    state.token = null;
+    setAuthUI();
+  });
+
+  function showLogin() {
+    document.getElementById('loginModal').style.display = 'flex';
+  }
+  document.getElementById('loginCancel').addEventListener('click', ()=> document.getElementById('loginModal').style.display = 'none');
+
+  document.getElementById('loginBtn').addEventListener('click', async ()=>{
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+    if (!user || !pass) { toast("ادخل بيانات الدخول", "error"); return; }
+    try {
+      // expects { token }
+      const res = await fetch((API_BASE || "") + '/api/auth/login', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username:user, password:pass })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      state.token = data.token;
+      localStorage.setItem('admin_token', data.token);
+      document.getElementById('loginModal').style.display = 'none';
+      setAuthUI();
+      toast("تم تسجيل الدخول");
+      await loadItems();
+    } catch (err) {
+      console.error(err);
+      toast("فشل تسجيل الدخول", "error");
+    }
+  });
+
+  /****************************************************************
+   * UI EVENTS
+   ****************************************************************/
+  document.getElementById('search').addEventListener('input', ()=> renderTable());
+  document.getElementById('filterCategory').addEventListener('change', ()=> renderTable());
+
+  /****************************************************************
+   * STARTUP
+   ****************************************************************/
+  (async function init(){
+    setAuthUI();
+    // attempt load if token exists
+    if (state.token) {
+      try { await loadItems(); } catch(e){ console.warn("load failed", e); }
+    } else {
+      // show login modal by default if not logged in
+      showLogin();
+    }
+  })();
+  </script>
+</body>
+</html>
