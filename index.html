@@ -456,12 +456,6 @@
       toast("فشل تسجيل الدخول", "error");
     }
   });
-    
-const res = await fetch("https://cafe-dashboard-backend-production.up.railway.app/", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ username, password })
-});
 
   /****************************************************************
    * UI EVENTS
